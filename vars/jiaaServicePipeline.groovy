@@ -57,8 +57,10 @@ def call(Map config = [:]) {
                 }
                 steps {
                     container('nodejs') {
-                         sh 'npm install'
-                         sh 'npm run electron:build' // Electron 빌드
+                         withCredentials([string(credentialsId: 'github-token', variable: 'GH_TOKEN')]) {
+                             sh 'npm install'
+                             sh 'npm run electron:build' // Electron 빌드
+                         }
                     }
                     /*
                     // S3 업로드 등은 추후 구현
