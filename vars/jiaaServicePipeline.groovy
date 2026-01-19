@@ -1,3 +1,4 @@
+def call(Map config = [:]) {
     // 1. 파라미터 및 환경 변수 설정
     def buildType = config.get('type', 'gradle') // 기본값: gradle
     
