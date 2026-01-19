@@ -1,7 +1,12 @@
-def call(Map config = [:]) {
     // 1. 파라미터 및 환경 변수 설정
     def buildType = config.get('type', 'gradle') // 기본값: gradle
-    def appName = config.get('appName', env.JOB_BASE_NAME)
+    
+    // appName 자동 감지 로직 개선 (JOB_NAME: Folder/Repo/Branch)
+    def appName = config.get('appName')
+    if (!appName) {
+        def tokens = env.JOB_NAME.tokenize('/')
+        appName = tokens.size() > 1 ? tokens[tokens.size() - 2] : env.JOB_BASE_NAME
+    }
     
     pipeline {
         agent any
@@ -9,7 +14,8 @@ def call(Map config = [:]) {
         environment {
             // ECR 레지스트리 주소
             ECR_REGISTRY = '541673202749.dkr.ecr.ap-northeast-2.amazonaws.com'
-            IMAGE_NAME = "jiaa/${appName}"
+            // ECR 리포지토리 이름 (prefix 제거)
+            IMAGE_NAME = "${appName}"
             // AWS S3 (Electron용)
             S3_BUCKET = 'jio-client-releases' 
         }
