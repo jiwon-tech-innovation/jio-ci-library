@@ -1,0 +1,86 @@
+# 1. 봇에게 줄 신분증 (ServiceAccount)
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ecr-refresh-sa
+  namespace: cicd
+---
+# 2. 봇이 할 수 있는 일 (Role: 시크릿 조회/삭제/생성)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: ecr-refresh-role
+  namespace: cicd
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "delete", "create"]
+---
+# 3. 신분증과 권한 연결 (RoleBinding)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ecr-refresh-binding
+  namespace: cicd
+subjects:
+  - kind: ServiceAccount
+    name: ecr-refresh-sa
+    namespace: cicd
+roleRef:
+  kind: Role
+  name: ecr-refresh-role
+  apiGroup: rbac.authorization.k8s.io
+---
+# 4. 10시간마다 일하는 작업반장 (CronJob)
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: ecr-registry-helper
+  namespace: cicd
+spec:
+  schedule: "0 */10 * * *" # 10시간마다 실행
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 2
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: ecr-refresh-sa
+          containers:
+          - name: ecr-refresher
+            image: odaniait/aws-kubectl:latest
+            imagePullPolicy: IfNotPresent
+            env:
+              - name: AWS_REGION
+                value: "ap-northeast-2"
+              - name: ECR_REGISTRY
+                value: "541673202749.dkr.ecr.ap-northeast-2.amazonaws.com"
+              # 아까 만든 aws-secret에서 키를 꺼내옴 (안전!)
+              - name: AWS_ACCESS_KEY_ID
+                valueFrom:
+                  secretKeyRef:
+                    name: aws-secret
+                    key: access-key
+              - name: AWS_SECRET_ACCESS_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: aws-secret
+                    key: secret-key
+            command:
+              - /bin/sh
+              - -c
+              - |
+                echo "🚀 ECR 토큰 갱신 시작..."
+                ECR_TOKEN=$(aws ecr get-login-password --region ${AWS_REGION})
+                
+                # 기존 시크릿 삭제 후 재생성 (덮어쓰기)
+                kubectl delete secret ecr-credentials -n cicd --ignore-not-found
+                
+                kubectl create secret docker-registry ecr-credentials \
+                  --docker-server=${ECR_REGISTRY} \
+                  --docker-username=AWS \
+                  --docker-password=${ECR_TOKEN} \
+                  -n cicd
+                  
+                echo "✅ ECR 토큰 갱신 완료!"
+          restartPolicy: Never
