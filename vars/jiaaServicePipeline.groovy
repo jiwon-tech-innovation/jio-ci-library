@@ -43,15 +43,18 @@ def call(Map config = [:]) {
             // -----------------------------------------------------------
             stage('Client Build (Electron)') {
                 when { expression { return buildType == 'electron' } }
-                tools { nodejs 'NodeJS_20' } // Jenkins에 NodeJS_20 툴 설정 필요
+                agent {
+                    kubernetes {
+                        yaml libraryResource('pod-templates/nodejs-pod.yaml') 
+                    }
+                }
                 steps {
-                    sh 'npm install'
-                    sh 'npm run make' // Electron 빌드
-                    // 빌드 결과물을 S3로 업로드 (Jenkins에 AWS CLI 설정 필요)
+                    container('nodejs') {
+                         sh 'npm install'
+                         sh 'npm run make' // Electron 빌드
+                    }
                     /*
-                    sh """
-                        aws s3 cp dist/make/ s3://${S3_BUCKET}/${appName}/${env.BUILD_NUMBER}/ --recursive
-                    """
+                    // S3 업로드 등은 추후 구현
                     */
                 }
             }
