@@ -57,7 +57,7 @@ def call(Map config = [:]) {
                 }
                 steps {
                     container('nodejs') {
-                         withCredentials([string(credentialsId: 'github-token', variable: 'GH_TOKEN')]) {
+                         withCredentials([usernamePassword(credentialsId: 'github-token', usernameVariable: 'GH_USER', passwordVariable: 'GH_TOKEN')]) {
                              sh 'npm install'
                              sh 'npm run electron:build' // Electron 빌드
                          }
