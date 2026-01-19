@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    jenkins: slave
+spec:
+  containers:
+  # 1. Kaniko 컨테이너 (이미지 빌드용)
+  - name: kaniko
+    image: gcr.io/kaniko-project/executor:debug
+    command: ["/busybox/sh", "-c"]
+    args: ["cat"]
+    tty: true
+    volumeMounts:
+      - name: kaniko-secret
+        mountPath: /kaniko/.docker
+  
+  # 2. 볼륨 설정 (ECR 인증 정보)
+  volumes:
+  - name: kaniko-secret
+    secret:
+      secretName: ecr-credentials  # K8s에 이 Secret이 있어야 함
+      items:
+        - key: .dockerconfigjson
+          path: config.json
