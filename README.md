@@ -11,13 +11,13 @@ GitHub Organization의 모든 저장소를 Jenkins가 자동 스캔하며, 실�
 graph TD
     User[Developer] -->|Push Code| Github[GitHub Service Repo]
     Github -->|Webhook| Jenkins[Jenkins Controller]
-    Jenkins -->|Load Script| Lib[Shared Library (This Repo)]
+    Jenkins -->|Load Script| Lib["Shared Library (This Repo)"]
     Jenkins -->|Launch Pod| K8s[Kubernetes Cluster]
     
     subgraph K8s Worker Node
         Pod[Dynamic Agent Pod]
         Container1[Jnlp Agent]
-        Container2[Kaniko (Docker Build)]
+        Container2["Kaniko (Docker Build)"]
     end
     
     Lib --> Pod
@@ -25,7 +25,7 @@ graph TD
     Pod -->|Build Image| Kaniko
     Kaniko -->|Push Image| ECR[AWS ECR]
     
-    CronJob[K8s CronJob] -->|Refresh Token (Every 10h)| Secret[K8s Secret (ecr-credentials)]
+    CronJob[K8s CronJob] -->|Refresh Token (Every 10h)| Secret["K8s Secret (ecr-credentials)"]
     Pod -.->|Mount| Secret
 ```
 
