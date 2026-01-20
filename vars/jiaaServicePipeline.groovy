@@ -141,7 +141,7 @@ def call(Map config = [:]) {
                                     cd jio-gitops/apps/${appName}/overlays/prod
                                     
                                     # kustomization.yaml에서 newTag 업데이트 (Linux sed)
-                                    sed -i 's/newTag: .*/newTag: ${env.BUILD_NUMBER}/' kustomization.yaml
+                                    sed -i 's/newTag: .*/newTag: "${env.BUILD_NUMBER}"/' kustomization.yaml
                                     
                                     # 변경 사항 커밋 & 푸시
                                     git add kustomization.yaml
