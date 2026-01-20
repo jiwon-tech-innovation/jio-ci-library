@@ -107,6 +107,52 @@ def call(Map config = [:]) {
                     }
                 }
             }
+
+            // -----------------------------------------------------------
+            // [GitOps] Update Manifest (ArgoCD)
+            // 빌드된 이미지 태그(BUILD_NUMBER)를 GitOps 레포지토리에 반영
+            // -----------------------------------------------------------
+            stage('GitOps Update') {
+                when { 
+                    allOf { 
+                        expression { return buildType != 'electron' }
+                        branch 'main' // 메인 브랜치에서만 배포
+                    } 
+                }
+                agent {
+                    kubernetes {
+                        // git과 sed가 필요함. 기본 jnlp 슬레이브 또는 nodejs 사용
+                        yaml libraryResource('pod-templates/nodejs-pod.yaml')
+                    }
+                }
+                steps {
+                    container('nodejs') {
+                        script {
+                            withCredentials([usernamePassword(credentialsId: 'github-token', usernameVariable: 'GH_USER', passwordVariable: 'GH_TOKEN')]) {
+                                sh """
+                                    # Git 설정
+                                    git config --global user.email "jenkins@jio.com"
+                                    git config --global user.name "Jenkins Bot"
+                                    
+                                    # GitOps 레포 클론
+                                    git clone https://${GH_USER}:${GH_TOKEN}@github.com/jiwon-tech-innovation/jio-gitops.git
+                                    
+                                    # 태그 업데이트
+                                    cd jio-gitops/apps/${appName}/overlays/prod
+                                    
+                                    # kustomization.yaml에서 newTag 업데이트 (Linux sed)
+                                    sed -i 's/newTag: .*/newTag: ${env.BUILD_NUMBER}/' kustomization.yaml
+                                    
+                                    # 변경 사항 커밋 & 푸시
+                                    git add kustomization.yaml
+                                    git commit -m "deploy: update ${appName} to build ${env.BUILD_NUMBER}"
+                                    git push origin main
+                                """
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
