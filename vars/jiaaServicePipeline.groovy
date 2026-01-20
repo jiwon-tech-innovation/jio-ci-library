@@ -15,8 +15,10 @@ def call(Map config = [:]) {
         environment {
             // ECR 레지스트리 주소
             ECR_REGISTRY = '541673202749.dkr.ecr.ap-northeast-2.amazonaws.com'
-            // ECR 리포지토리 이름 (prefix 제거)
-            IMAGE_NAME = "${appName}"
+            // 서비스별 ECR 레포지토리 경로 매핑
+            // jiaa-server-ai, jiaa-server-data: 접두사 없음
+            // jiaa-server-core, jiaa-auth: jiaa/ 접두사 있음
+            IMAGE_NAME = getImageName(appName)
             // AWS S3 (Electron용)
             S3_BUCKET = 'jio-client-releases' 
         }
@@ -107,4 +109,19 @@ def call(Map config = [:]) {
             }
         }
     }
+}
+
+/**
+ * 서비스별 ECR 레포지토리 경로 매핑
+ * - jiaa-server-ai, jiaa-server-data: 접두사 없음
+ * - jiaa-server-core, jiaa-auth: jiaa/ 접두사 있음
+ */
+def getImageName(String appName) {
+    def repoMap = [
+        'jiaa-server-ai'   : 'jiaa-server-ai',
+        'jiaa-server-data' : 'jiaa-server-data',
+        'jiaa-server-core' : 'jiaa/jiaa-server-core',
+        'jiaa-auth'        : 'jiaa/jiaa-server-auth'
+    ]
+    return repoMap.get(appName, appName) // 매핑 없으면 appName 그대로 사용
 }
