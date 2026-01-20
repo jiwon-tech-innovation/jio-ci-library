@@ -113,11 +113,16 @@ def call(Map config = [:]) {
 
 /**
  * 서비스별 ECR 레포지토리 경로 매핑
- * - jiaa-server-ai, jiaa-server-data: 접두사 없음
- * - jiaa-server-core, jiaa-auth: jiaa/ 접두사 있음
+ * GitHub Repo: jio-* → ECR Repo: jiaa-*
  */
 def getImageName(String appName) {
     def repoMap = [
+        // GitHub repo name → ECR repo name
+        'jio-server-ai'    : 'jiaa-server-ai',
+        'jio-server-data'  : 'jiaa-server-data',
+        'jio-server-core'  : 'jiaa/jiaa-server-core',
+        'jio-auth'         : 'jiaa/jiaa-server-auth',
+        // Legacy (jiaa-* 형태도 지원)
         'jiaa-server-ai'   : 'jiaa-server-ai',
         'jiaa-server-data' : 'jiaa-server-data',
         'jiaa-server-core' : 'jiaa/jiaa-server-core',
